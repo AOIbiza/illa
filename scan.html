@@ -6,13 +6,18 @@
   <title>Escanear QR</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="background">
   <h1>Escaneo de QR</h1>
   <div id="scanStatus"></div>
   <a href="ranking.html">Ver Ranking</a>
   <script src="script.js"></script>
   <script>
-    handleQRScan();
+    if (!getCurrentUser()) {
+      alert("Debes estar registrado para escanear códigos QR.");
+      window.location.href = 'index.html';
+    } else {
+      handleQRScan();
+    }
   </script>
 </body>
 </html>

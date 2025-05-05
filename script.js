@@ -1,6 +1,29 @@
 const EVENT_START = new Date('2025-05-25T16:00:00');
 const EVENT_END = new Date('2025-05-25T17:30:00');
 
+const QR_HASHES = {
+  "62af2": 1,
+  "a49d3": 2,
+  "c7f84": 3,
+  "34e0b": 4,
+  "5a8d9": 5,
+  "9b13c": 6,
+  "e23aa": 7,
+  "b6d4e": 8,
+  "712ac": 9,
+  "3ecf2": 10,
+  "fde77": 11,
+  "4b91a": 12,
+  "886dd": 13,
+  "7a993": 14,
+  "2c1e8": 15,
+  "1f3cb": 16,
+  "d99f0": 17,
+  "ebac3": 18,
+  "a6d72": 19,
+  "05cde": 20
+};
+
 function getUsers() {
   return JSON.parse(localStorage.getItem('users') || '{}');
 }
@@ -40,11 +63,12 @@ function handleLogin() {
 
 function handleQRScan() {
   const params = new URLSearchParams(window.location.search);
-  const qrId = params.get('qr');
+  const hash = params.get('qr');
+  const qrId = QR_HASHES[hash];
   const now = new Date();
   const scanStatus = document.getElementById('scanStatus');
 
-  if (!qrId || isNaN(qrId) || qrId < 1 || qrId > 20) {
+  if (!qrId) {
     scanStatus.textContent = 'QR no válido';
     return;
   }
@@ -64,7 +88,7 @@ function handleQRScan() {
   const users = getUsers();
   const userData = users[user];
   if (userData.scans.find((s) => s.qr == qrId)) {
-    scanStatus.textContent = `Ya habías escaneado el código ${qrId}`;
+    scanStatus.textContent = `Ya habías escaneado este código.`;
     return;
   }
   userData.scans.push({ qr: qrId, time: now.toISOString() });
