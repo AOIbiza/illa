@@ -169,3 +169,9 @@ window.resetRanking = async () => {
   renderRanking();
   alert("Ranking reiniciado.");
 };
+
+
+// Autoejecutar escaneo si estamos en scan.html con ?qr=...
+if (window.location.pathname.includes("scan.html") && new URLSearchParams(window.location.search).has("qr")) {
+  handleQRScan();
+}
