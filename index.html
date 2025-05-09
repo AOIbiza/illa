@@ -3,16 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Gymkana Jujutsu Kaisen - Registro</title>
+  <title>Gymkana Jujutsu Kaisen - Login</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body class="background">
-  <h1>Gymkana Jujutsu Kaisen - Registro</h1>
+  <h1>Gymkana Jujutsu Kaisen</h1>
   <form id="loginForm" class="login-form">
-    <input type="text" id="name" placeholder="Nombre" required />
+    <input type="email" id="email" placeholder="Correo electrónico" required />
     <input type="password" id="password" placeholder="Contraseña" required />
+    <input type="text" id="displayName" placeholder="Nombre visible" style="display:none;" />
     <button type="submit">Entrar</button>
   </form>
-  <script src="script.js"></script>
+  <div id="message"></div>
+  <script type="module" src="script.js"></script>
 </body>
 </html>

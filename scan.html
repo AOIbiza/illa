@@ -8,16 +8,9 @@
 </head>
 <body class="background">
   <h1>Escaneo de QR</h1>
+  <div id="welcome"></div>
   <div id="scanStatus"></div>
   <a href="ranking.html">Ver Ranking</a>
-  <script src="script.js"></script>
-  <script>
-    if (!getCurrentUser() || getCurrentUser() === 'admin2025') {
-      alert("Debes estar registrado como jugador para escanear códigos QR.");
-      window.location.href = 'index.html';
-    } else {
-      handleQRScan();
-    }
-  </script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
