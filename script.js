@@ -84,7 +84,21 @@ function validateHash(hash) {
   return null;
 }
 
-function sha256Sync(str) {
+async function sha256(str) {
+  const buffer = new TextEncoder().encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function validateHash(hash) {
+  for (let i = 1; i <= 20; i++) {
+    const raw = i + SECRET;
+    const expected = (await sha256(raw)).substring(0, 6);
+    if (expected === hash) return i;
+  }
+  return null;
+}
   const buffer = new TextEncoder().encode(str);
   return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
