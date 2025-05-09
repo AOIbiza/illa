@@ -9,9 +9,19 @@
 <body class="background">
   <h1>Ranking en Tiempo Real</h1>
   <div id="ranking"></div>
+  <div id="adminControls" style="margin-top:2em; display:none">
+    <button onclick="startGymkana()">Iniciar Gymkana</button>
+    <button onclick="endGymkana()">Terminar Gymkana</button>
+    <button onclick="resetRanking()">Reiniciar Ranking</button>
+  </div>
   <script src="script.js"></script>
   <script>
     renderRanking();
+    checkAdminStatus().then((enabled) => {
+      if (getCurrentUser() === 'admin' && enabled) {
+        document.getElementById('adminControls').style.display = 'block';
+      }
+    });
   </script>
 </body>
 </html>

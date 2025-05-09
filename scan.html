@@ -12,8 +12,8 @@
   <a href="ranking.html">Ver Ranking</a>
   <script src="script.js"></script>
   <script>
-    if (!getCurrentUser()) {
-      alert("Debes estar registrado para escanear códigos QR.");
+    if (!getCurrentUser() || getCurrentUser() === 'admin') {
+      alert("Debes estar registrado como jugador para escanear códigos QR.");
       window.location.href = 'index.html';
     } else {
       handleQRScan();
