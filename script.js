@@ -1,4 +1,6 @@
 const SECRET = "jujutsu2025";
+const ADMIN_USER_HASH = btoa("admin2025");
+const ADMIN_PASS_HASH = btoa("otakuleao2021");
 
 function getUsers() {
   return JSON.parse(localStorage.getItem('users') || '{}');
@@ -25,13 +27,8 @@ function handleLogin() {
     if (!name || !password) return alert('Introduce nombre y contraseña');
     const users = getUsers();
 
-    if (name === 'admin') {
-      const adminEnabled = await checkAdminStatus();
-      if (!adminEnabled) {
-        alert('El usuario admin está temporalmente desactivado.');
-        return;
-      }
-      if (password !== '2142') {
+    if (btoa(name) === ADMIN_USER_HASH) {
+      if (btoa(password) !== ADMIN_PASS_HASH) {
         alert('Contraseña incorrecta');
         return;
       }
@@ -40,7 +37,7 @@ function handleLogin() {
       return;
     }
 
-    if (!users[name] && name !== 'admin') {
+    if (!users[name] && btoa(name) !== ADMIN_USER_HASH) {
       users[name] = { password, scans: [] };
       saveUsers(users);
     }
@@ -75,12 +72,21 @@ function handleQRScan() {
     return;
   }
   const user = getCurrentUser();
-  if (!user || user === 'admin') {
+  if (!user || btoa(user) === ADMIN_USER_HASH) {
     scanStatus.textContent = 'No estás identificado como jugador.';
     return;
   }
   const users = getUsers();
   const userData = users[user];
+  const lastScan = userData.scans[userData.scans.length - 1];
+  if (lastScan) {
+    const lastTime = new Date(lastScan.time);
+    const diff = (now - lastTime) / 1000;
+    if (diff < 45) {
+      scanStatus.textContent = `Espera ${Math.ceil(45 - diff)} segundos antes de escanear otro QR.`;
+      return;
+    }
+  }
   if (userData.scans.find((s) => s.qr == qrId)) {
     scanStatus.textContent = `Ya habías escaneado este código.`;
     return;
@@ -93,11 +99,12 @@ function handleQRScan() {
 function renderRanking() {
   const users = getUsers();
   const sorted = Object.entries(users)
-    .filter(([name]) => name !== 'admin')
+    .filter(([name]) => btoa(name) !== ADMIN_USER_HASH)
     .map(([name, data]) => {
       return {
         name,
         count: data.scans.length,
+        scans: data.scans,
         lastScan: data.scans.reduce((latest, s) =>
           !latest || new Date(s.time) > new Date(latest.time) ? s : latest, null)
       };
@@ -108,8 +115,17 @@ function renderRanking() {
 
   const rankingDiv = document.getElementById('ranking');
   rankingDiv.innerHTML = '<ol>' +
-    sorted.map(user => `<li>${user.name} - ${user.count} códigos</li>`).join('') +
+    sorted.map(user => `<li><a href="#" onclick="showUserDetails('${user.name}')">${user.name}</a> - ${user.count} códigos</li>`).join('') +
     '</ol>';
+}
+
+function showUserDetails(username) {
+  const users = getUsers();
+  const user = users[username];
+  if (!user) return;
+  const detailsDiv = document.getElementById('userDetails');
+  const list = user.scans.map(s => `<li>Código ${s.qr} - ${new Date(s.time).toLocaleTimeString()}</li>`).join('');
+  detailsDiv.innerHTML = `<h2>${username}</h2><ul>${list}</ul>`;
 }
 
 function sha256Sync(str) {
@@ -131,23 +147,11 @@ function endGymkana() {
   alert('Gymkana terminada.');
 }
 
-async function checkAdminStatus() {
-  try {
-    const response = await fetch('1.txt', { method: 'HEAD' });
-    const lastModified = response.headers.get('Last-Modified');
-    const resetTime = localStorage.getItem('adminResetTime');
-    return !resetTime || new Date(lastModified) > new Date(resetTime);
-  } catch {
-    return false;
-  }
-}
-
 function resetRanking() {
   if (confirm('¿Estás seguro de que quieres reiniciar el ranking?')) {
     localStorage.removeItem('users');
-    localStorage.setItem('adminResetTime', new Date().toISOString());
     renderRanking();
-    alert('Ranking reiniciado. El usuario admin quedará deshabilitado hasta que subas de nuevo 1.txt.');
+    alert('Ranking reiniciado.');
   }
 }
 
