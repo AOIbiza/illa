@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, updateDoc, arrayUnion, collection, getDocs, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
@@ -19,7 +20,6 @@ const db = getFirestore(app);
 const adminEmail = "samuelmolla4@gmail.com";
 let currentUser = null;
 let currentName = null;
-let gymkanaActive = false;
 
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
@@ -27,7 +27,8 @@ if (loginForm) {
     e.preventDefault();
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    const displayName = document.getElementById("displayName").value.trim();
+    const displayNameInput = document.getElementById("displayName");
+    const displayName = displayNameInput?.value.trim();
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -35,11 +36,10 @@ if (loginForm) {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (!userDoc.exists()) {
         if (!displayName) {
-          document.getElementById("displayName").style.display = "block";
+          displayNameInput.style.display = "block";
           document.getElementById("message").innerText = "Introduce un nombre visible único.";
           return;
         }
-        // Verifica que el nombre visible sea único
         const allUsers = await getDocs(collection(db, "users"));
         if (Array.from(allUsers.docs).some(doc => doc.data().name === displayName)) {
           alert("Ese nombre ya está en uso.");
@@ -49,13 +49,12 @@ if (loginForm) {
       }
       window.location.href = "scan.html";
     } catch (err) {
-      // Si no existe, registramos
       try {
         const newUser = await createUserWithEmailAndPassword(auth, email, password);
-        document.getElementById("displayName").style.display = "block";
+        displayNameInput.style.display = "block";
         document.getElementById("message").innerText = "Introduce un nombre visible único y vuelve a iniciar sesión.";
       } catch (e) {
-        alert("Error al iniciar sesión o registrar: " + e.message);
+        alert("Error: " + e.message);
       }
     }
   });
@@ -69,17 +68,13 @@ onAuthStateChanged(auth, async (user) => {
       currentName = userDoc.data().name;
       const welcome = document.getElementById("welcome");
       if (welcome) welcome.textContent = "Bienvenido, " + currentName;
-      if (user.email === adminEmail) {
-        const adminControls = document.getElementById("adminControls");
-        if (adminControls) adminControls.style.display = "block";
-      }
+      const adminControls = document.getElementById("adminControls");
+      if (user.email === adminEmail && adminControls) adminControls.style.display = "block";
     }
   }
 });
 
-// QR Logic
 const SECRET = "jujutsu2025";
-
 function validateHash(hash) {
   for (let i = 1; i <= 20; i++) {
     const raw = i + SECRET;
@@ -105,28 +100,29 @@ window.handleQRScan = async function () {
     return;
   }
 
+  const configSnap = await getDoc(doc(db, "config", "gymkana"));
+  const isActive = configSnap.exists() && configSnap.data().active;
+  if (!isActive) {
+    scanStatus.textContent = "La gymkana no está activa.";
+    return;
+  }
+
   const userRef = doc(db, "users", currentUser.uid);
   const userSnap = await getDoc(userRef);
   const userData = userSnap.data();
   const now = new Date();
 
-  if (!gymkanaActive) {
-    scanStatus.textContent = "La gymkana no está activa.";
-    return;
-  }
-
   const alreadyScanned = userData.scans.find(s => s.qr === qrId);
   if (alreadyScanned) {
-    scanStatus.textContent = "Ya escaneaste este código.";
+    scanStatus.textContent = "Código ya escaneado, busca el siguiente.";
     return;
   }
 
   const lastScan = userData.scans[userData.scans.length - 1];
   if (lastScan) {
     const lastTime = new Date(lastScan.time.toDate());
-    const diff = (now - lastTime) / 1000;
-    if (diff < 45) {
-      scanStatus.textContent = "Espera " + Math.ceil(45 - diff) + " segundos.";
+    if ((now - lastTime) / 1000 < 45) {
+      scanStatus.textContent = "Espera unos segundos antes de escanear otro código.";
       return;
     }
   }
@@ -134,8 +130,7 @@ window.handleQRScan = async function () {
   await updateDoc(userRef, {
     scans: arrayUnion({ qr: qrId, time: serverTimestamp() })
   });
-
-  scanStatus.textContent = "Código " + qrId + " registrado.";
+  scanStatus.textContent = "Código escaneado con éxito";
 };
 
 window.renderRanking = async function () {
@@ -159,8 +154,14 @@ window.showUserDetails = async function (name) {
   detail.innerHTML = "<h2>" + name + "</h2><ul>" + scans.map(s => `<li>Código ${s.qr} - ${s.time?.toDate?.().toLocaleTimeString() || '...'} </li>`).join("") + "</ul>";
 };
 
-window.startGymkana = () => { gymkanaActive = true; alert("Gymkana iniciada"); };
-window.endGymkana = () => { gymkanaActive = false; alert("Gymkana finalizada"); };
+window.startGymkana = async () => {
+  await setDoc(doc(db, "config", "gymkana"), { active: true });
+  alert("Gymkana iniciada");
+};
+window.endGymkana = async () => {
+  await setDoc(doc(db, "config", "gymkana"), { active: false });
+  alert("Gymkana finalizada");
+};
 window.resetRanking = async () => {
   const snapshot = await getDocs(collection(db, "users"));
   for (let docSnap of snapshot.docs) {
@@ -170,8 +171,7 @@ window.resetRanking = async () => {
   alert("Ranking reiniciado.");
 };
 
-
-// Autoejecutar escaneo si estamos en scan.html con ?qr=...
+// Autoejecutar escaneo si hay ?qr
 if (window.location.pathname.includes("scan.html") && new URLSearchParams(window.location.search).has("qr")) {
-  handleQRScan();
+  window.handleQRScan && handleQRScan();
 }
